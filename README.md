@@ -39,28 +39,28 @@ This project builds the full pipeline from raw transactional data to prescriptiv
 ┌─────────────────────────────────────────────────────────────┐
 │                        RetentionIQ                          │
 │                                                             │
-│  ┌────────────┐   ┌────────────┐   ┌────────────────────┐  │
-│  │   Data      │   │   Models   │   │   Decision         │  │
-│  │   Platform  │──▶│   Layer    │──▶│   Engine           │  │
-│  │            │   │            │   │                    │  │
-│  │ Bronze/    │   │ Survival   │   │ Causal Forests     │  │
-│  │ Silver/    │   │ Analysis   │   │ (heterogeneous     │  │
-│  │ Gold       │   │            │   │  treatment effects) │  │
-│  │            │   │ Churn      │   │                    │  │
-│  │ Feast      │   │ Scoring    │   │ Stochastic         │  │
-│  │ (features) │   │            │   │ Optimizer          │  │
-│  │            │   │ LTV        │   │ (budget allocation) │  │
-│  └────────────┘   └────────────┘   └────────────────────┘  │
+│  ┌────────────┐   ┌────────────┐   ┌────────────────────┐   │
+│  │   Data     │   │   Models   │   │   Decision         │   │ 
+│  │   Platform │─▶ │   Layer   │ ─▶│  Engine            │   │
+│  │            │   │            │   │                    │   │
+│  │ Bronze/    │   │ Survival   │   │ Causal Forests     │   │
+│  │ Silver/    │   │ Analysis   │   │ (heterogeneous     │   │
+│  │ Gold       │   │            │   │  treatment effects)│   │
+│  │            │   │ Churn      │   │                    │   │
+│  │ Feast      │   │ Scoring    │   │ Stochastic         │   │
+│  │ (features) │   │            │   │ Optimizer          │   │
+│  │            │   │ LTV        │   │ (budget allocation)│   │
+│  └────────────┘   └────────────┘   └────────────────────┘   │
 │                                                             │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │                    Agent Layer                         │ │
-│  │  LangGraph orchestration · pgvector memory            │ │
-│  │  Tool use (SQL, models, optimizer) · Guardrails       │ │
+│  │  LangGraph orchestration · pgvector memory             │ │
+│  │  Tool use (SQL, models, optimizer) · Guardrails        │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                                                             │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │  Infra: Docker · FastAPI · MLflow · Dagster · CI/CD   │ │
-│  │  Evidently (monitoring) · Great Expectations (DQ)     │ │
+│  │  Infra: Docker · FastAPI · MLflow · Dagster · CI/CD    │ │
+│  │  Evidently (monitoring) · Great Expectations (DQ)      │ │
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
