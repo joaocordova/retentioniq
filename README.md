@@ -40,8 +40,8 @@ This project builds the full pipeline from raw transactional data to prescriptiv
 │                        RetentionIQ                          │
 │                                                             │
 │  ┌────────────┐   ┌────────────┐   ┌────────────────────┐   │
-│  │   Data     │   │   Models   │   │   Decision         │   │ 
-│  │   Platform │─▶ │   Layer   │ ─▶│  Engine            │   │
+│  │   Data     │   │ Models     │   │   Decision         │   │ 
+│  │   Platform │   │ Layer      │   │  Engine            │   │
 │  │            │   │            │   │                    │   │
 │  │ Bronze/    │   │ Survival   │   │ Causal Forests     │   │
 │  │ Silver/    │   │ Analysis   │   │ (heterogeneous     │   │
