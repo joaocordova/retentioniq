@@ -37,15 +37,15 @@ def generate_locations(n_locations: int, rng: np.random.Generator) -> pd.DataFra
         region = rng.choice(regions, p=region_weights)
         # Urban locations have more capacity but higher operating cost
         is_urban = rng.random() < 0.6
-        capacity = rng.integers(300, 800) if is_urban else rng.integers(150, 400)
+        capacity = int(rng.integers(300, 800) if is_urban else rng.integers(150, 400))
 
         locations.append({
             "location_id": f"LOC_{i:04d}",
             "region": region,
             "is_urban": is_urban,
             "capacity": capacity,
-            "monthly_operating_cost": capacity * rng.integers(15, 35),
-            "staff_retention_hours": rng.integers(10, 30),
+            "monthly_operating_cost": capacity * int(rng.integers(15, 35)),
+            "staff_retention_hours": int(rng.integers(10, 30)),
         })
 
     return pd.DataFrame(locations)
@@ -71,7 +71,7 @@ def generate_members(
         location = rng.choice(loc_ids, p=loc_weights)
 
         # Enrollment date with seasonal pattern
-        month_offset = rng.integers(0, n_months)
+        month_offset = int(rng.integers(0, n_months))
         enrollment_month = (start_date + timedelta(days=30 * month_offset)).month
 
         # January peak: 3x enrollment rate
@@ -85,7 +85,7 @@ def generate_members(
             enrollment_prob = 0.07
 
         # Spread enrollment within the month
-        day_in_month = rng.integers(1, 29)
+        day_in_month = int(rng.integers(1, 29))
         join_date = start_date + timedelta(days=30 * month_offset + day_in_month)
 
         # Contract source: 15% aggregator
@@ -118,15 +118,15 @@ def generate_members(
 
         # Some members are still active (right-censored)
         max_tenure = (datetime(2026, 3, 1) - join_date).days / 30
-        if tenure_months > max_tenure:
+        if float(tenure_months) > max_tenure:
             cancel_date = None  # still active
             churned = False
         else:
-            cancel_date = join_date + timedelta(days=int(tenure_months * 30))
+            cancel_date = join_date + timedelta(days=int(float(tenure_months) * 30))
             churned = True
 
         # Age and demographics
-        age = int(rng.normal(32, 10))
+        age = int(float(rng.normal(32, 10)))
         age = max(16, min(75, age))
         gender = rng.choice(["M", "F", "other"], p=[0.45, 0.50, 0.05])
 
@@ -145,7 +145,7 @@ def generate_members(
             # PII fields (will be used to test guardrails)
             "name": f"Member_{i}",  # placeholder
             "email": f"member_{i}@example.com",
-            "cpf": f"{rng.integers(100,999)}.{rng.integers(100,999)}.{rng.integers(100,999)}-{rng.integers(10,99)}",
+            "cpf": f"{int(rng.integers(100,999))}.{int(rng.integers(100,999))}.{int(rng.integers(100,999))}-{int(rng.integers(10,99))}",
         })
 
     return pd.DataFrame(members)
@@ -182,14 +182,14 @@ def generate_visits(
             n_visits = max(0, int(rng.poisson(avg_visits_per_month * decay)))
 
             for _ in range(n_visits):
-                visit_date = join + timedelta(days=30 * month + rng.integers(0, 30))
+                visit_date = join + timedelta(days=30 * month + int(rng.integers(0, 30)))
                 if visit_date > end:
                     continue
                 visits.append({
                     "member_id": member["member_id"],
                     "location_id": member["location_id"],
                     "visit_date": visit_date.strftime("%Y-%m-%d"),
-                    "visit_duration_minutes": int(rng.normal(60, 20)),
+                    "visit_duration_minutes": int(float(rng.normal(60, 20))),
                 })
 
     return pd.DataFrame(visits)
@@ -218,7 +218,7 @@ def generate_retention_actions(
         if rng.random() < 0.4:  # 40% of churned members received some action
             cancel = pd.Timestamp(member["cancel_date"])
             # Action happens 2-6 weeks before cancel
-            days_before = rng.integers(14, 45)
+            days_before = int(rng.integers(14, 45))
             action_date = cancel - timedelta(days=days_before)
 
             if member["contract_source"] == "aggregator":
@@ -243,7 +243,7 @@ def generate_retention_actions(
     )
     for _, member in active_members.iterrows():
         action_date = pd.Timestamp(member["join_date"]) + timedelta(
-            days=rng.integers(30, 180)
+            days=int(rng.integers(30, 180))
         )
         if action_date > pd.Timestamp("2026-03-01"):
             continue
