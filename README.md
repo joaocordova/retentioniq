@@ -35,35 +35,7 @@ This project builds the full pipeline from raw transactional data to prescriptiv
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        RetentionIQ                          │
-│                                                             │
-│  ┌────────────┐   ┌────────────┐   ┌────────────────────┐   │
-│  │   Data     │   │ Models     │   │   Decision         │   │ 
-│  │   Platform │   │ Layer      │   │  Engine            │   │
-│  │            │   │            │   │                    │   │
-│  │ Bronze/    │   │ Survival   │   │ Causal Forests     │   │
-│  │ Silver/    │   │ Analysis   │   │ (heterogeneous     │   │
-│  │ Gold       │   │            │   │  treatment effects)│   │
-│  │            │   │ Churn      │   │                    │   │
-│  │ Feast      │   │ Scoring    │   │ Stochastic         │   │
-│  │ (features) │   │            │   │ Optimizer          │   │
-│  │            │   │ LTV        │   │ (budget allocation)│   │
-│  └────────────┘   └────────────┘   └────────────────────┘   │
-│                                                             │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │                    Agent Layer                         │ │
-│  │  LangGraph orchestration · pgvector memory             │ │
-│  │  Tool use (SQL, models, optimizer) · Guardrails        │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Infra: Docker · FastAPI · MLflow · Dagster · CI/CD    │ │
-│  │  Evidently (monitoring) · Great Expectations (DQ)      │ │
-│  └────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
+![RetentionIQ Architecture](docs/images/architecture.png)
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed design decisions.
 
