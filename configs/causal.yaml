@@ -1,0 +1,72 @@
+# Causal inference configuration
+# DAG definition and estimation parameters
+
+dag:
+  # Treatment: retention action taken (binary: any action vs no action)
+  treatment: "retention_action_taken"
+  # Outcome: churned within 30 days of action (or equivalent window for control)
+  outcome: "churned_30d_post"
+  # Effect modifiers: variables that may moderate the treatment effect
+  effect_modifiers:
+    - "tenure_months"
+    - "contract_source"
+    - "visit_frequency_trend"
+    - "plan_type"
+    - "age_group"
+  # Confounders: variables that affect both treatment and outcome
+  # (managers are more likely to target at-risk members — selection bias)
+  confounders:
+    - "visit_frequency_30d"
+    - "days_since_last_visit"
+    - "payment_delay_flag"
+    - "tenure_months"
+    - "plan_price"
+    - "location_churn_rate"
+    - "enrollment_month"  # seasonality proxy
+  # Instruments: variables that affect treatment but not outcome directly
+  instruments: []  # none identified — using backdoor criterion only
+
+  # Separate DAGs for different segments
+  segments:
+    regular:
+      additional_confounders:
+        - "upgrade_history"
+        - "discount_received_30d"
+    aggregator:
+      additional_confounders:
+        - "aggregator_platform"  # gympass vs totalpass
+      excluded_treatments:
+        - "discount_offer"  # gym can't control pricing for aggregator members
+        - "plan_upgrade"    # gym can't control plan for aggregator members
+
+estimation:
+  method: "causal_forest_dml"
+  # EconML CausalForestDML parameters
+  model_y: "xgboost"  # outcome model (nuisance)
+  model_t: "xgboost"  # treatment model (propensity)
+  n_estimators: 200
+  min_samples_leaf: 50
+  max_depth: 8
+  honest: true  # honest splitting for valid confidence intervals
+  cv: 5
+
+  # Bootstrap for confidence intervals
+  bootstrap:
+    n_iterations: 100
+    confidence_level: 0.95
+
+refutation:
+  tests:
+    - name: "placebo_treatment"
+      description: "Replace treatment with random variable — effect should vanish"
+    - name: "random_common_cause"
+      description: "Add random confounder — effect should not change significantly"
+    - name: "data_subset"
+      description: "Estimate on random 80% subsets — effect should be stable"
+      n_subsets: 5
+    - name: "bootstrap"
+      description: "Bootstrap standard errors"
+      n_iterations: 200
+  pass_criteria:
+    placebo_effect_threshold: 0.01  # effect < 1pp with placebo
+    subset_stability_cv: 0.3       # coefficient of variation < 30% across subsets

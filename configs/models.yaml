@@ -1,0 +1,51 @@
+# Model training configuration
+# All hyperparameters live here — never hardcoded in Python
+
+survival:
+  model: "cox_ph"
+  duration_col: "tenure_months"
+  event_col: "churned"
+  stratify_by: "contract_source"  # separate curves for regular vs aggregator
+  penalizer: 0.01
+  baseline_estimation: "breslow"
+
+churn:
+  algorithm: "xgboost"
+  target: "churned_30d"
+  temporal_cv:
+    train_months: 12
+    validation_months: 3
+    test_months: 3
+    step_size: 1  # expanding window, 1-month steps
+  hyperparameters:
+    max_depth: 6
+    learning_rate: 0.05
+    n_estimators: 500
+    subsample: 0.8
+    colsample_bytree: 0.8
+    scale_pos_weight: "auto"  # calculated from class ratio
+    early_stopping_rounds: 50
+    eval_metric: "aucpr"  # precision-recall AUC (better for imbalanced)
+  threshold:
+    method: "f1_optimal"  # find threshold that maximizes F1
+    min_precision: 0.3     # business constraint: don't waste retention budget on false positives
+  features:
+    exclude:
+      - "member_id"
+      - "name"
+      - "email"
+      - "cpf"
+      - "cancel_date"  # leakage
+
+ltv:
+  method: "survival_revenue"  # expected tenure * expected monthly revenue
+  discount_rate: 0.01  # monthly discount rate for NPV calculation
+  max_horizon_months: 36
+
+mlflow:
+  experiment_name: "retentioniq"
+  tracking_uri: "${MLFLOW_TRACKING_URI}"
+  registry:
+    staging_metric: "val_aucpr"
+    staging_threshold: 0.75
+    production_promotion: "manual"  # require human approval to promote to production

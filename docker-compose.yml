@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: retentioniq-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-retentioniq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-retentioniq_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-retentioniq}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init_extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-retentioniq}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.0
+    container_name: retentioniq-mlflow
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://${POSTGRES_USER:-retentioniq}:${POSTGRES_PASSWORD:-retentioniq_dev}@postgres:5432/${POSTGRES_DB:-retentioniq}
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5001
+    ports:
+      - "${MLFLOW_PORT:-5001}:5001"
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  mlflow_artifacts:

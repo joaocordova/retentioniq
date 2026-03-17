@@ -1,0 +1,139 @@
+# Feature engineering configuration
+# Defines feature groups, windows, and transformations
+
+entity:
+  member:
+    join_keys: ["member_id"]
+    timestamp_field: "event_timestamp"
+  location:
+    join_keys: ["location_id"]
+    timestamp_field: "event_timestamp"
+
+feature_groups:
+  visit_behavior:
+    description: "Visit frequency and patterns"
+    features:
+      - name: "visit_count_7d"
+        aggregation: "count"
+        window_days: 7
+        source: "visits"
+      - name: "visit_count_14d"
+        aggregation: "count"
+        window_days: 14
+        source: "visits"
+      - name: "visit_count_30d"
+        aggregation: "count"
+        window_days: 30
+        source: "visits"
+      - name: "visit_count_60d"
+        aggregation: "count"
+        window_days: 60
+        source: "visits"
+      - name: "visit_count_90d"
+        aggregation: "count"
+        window_days: 90
+        source: "visits"
+      - name: "avg_visit_duration_30d"
+        aggregation: "mean"
+        field: "visit_duration_minutes"
+        window_days: 30
+        source: "visits"
+      - name: "days_since_last_visit"
+        aggregation: "recency"
+        source: "visits"
+      - name: "visit_frequency_trend"
+        description: "Ratio of last-14d visits to prior-14d visits"
+        aggregation: "custom"
+        formula: "visit_count_14d / max(visit_count_14d_prior, 1)"
+
+  tenure:
+    description: "Membership tenure features"
+    features:
+      - name: "tenure_days"
+        formula: "current_date - join_date"
+      - name: "tenure_months"
+        formula: "tenure_days / 30"
+      - name: "is_first_90_days"
+        formula: "tenure_days <= 90"
+
+  financial:
+    description: "Revenue and payment features"
+    features:
+      - name: "monthly_price"
+        source: "members"
+      - name: "total_revenue"
+        aggregation: "sum"
+        field: "amount"
+        source: "transactions"
+      - name: "payment_delay_flag"
+        description: "Had any late payment in last 90 days"
+        source: "transactions"
+
+  contract:
+    description: "Contract and plan features"
+    features:
+      - name: "contract_source"
+        encoding: "onehot"
+        categories: ["regular", "aggregator"]
+      - name: "plan_type"
+        encoding: "onehot"
+        categories: ["basic", "standard", "premium", "aggregator_standard"]
+      - name: "aggregator_platform"
+        encoding: "onehot"
+        categories: ["gympass", "totalpass", "wellhub", "none"]
+
+  demographics:
+    description: "Member demographics"
+    features:
+      - name: "age"
+        source: "members"
+      - name: "age_group"
+        bins: [0, 25, 35, 45, 55, 100]
+        labels: ["18-24", "25-34", "35-44", "45-54", "55+"]
+      - name: "gender"
+        encoding: "onehot"
+
+  location_context:
+    description: "Location-level features as member context"
+    features:
+      - name: "location_churn_rate_30d"
+        aggregation: "mean"
+        field: "churned_30d"
+        group_by: "location_id"
+        window_days: 30
+      - name: "location_active_members"
+        aggregation: "count"
+        group_by: "location_id"
+      - name: "location_is_urban"
+        source: "locations"
+      - name: "location_capacity_utilization"
+        formula: "location_active_members / location_capacity"
+
+  seasonal:
+    description: "Time-based seasonal features"
+    features:
+      - name: "enrollment_month"
+        formula: "month(join_date)"
+      - name: "enrollment_is_january"
+        formula: "enrollment_month == 1"
+      - name: "current_month"
+        formula: "month(current_date)"
+      - name: "is_summer"
+        formula: "current_month in [12, 1, 2]"
+
+# Features excluded from ML models (PII, leakage, identifiers)
+exclude_from_models:
+  - "member_id"
+  - "location_id"
+  - "name"
+  - "email"
+  - "cpf"
+  - "phone"
+  - "address"
+  - "cancel_date"      # leakage
+  - "churned"          # target, not feature
+
+# Point-in-time join configuration (critical for temporal integrity)
+point_in_time:
+  entity_timestamp: "event_timestamp"
+  ttl_days: 1   # features expire after 1 day (use freshest available)

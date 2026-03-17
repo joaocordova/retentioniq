@@ -1,0 +1,95 @@
+# Agent layer configuration
+
+llm:
+  provider: "anthropic"
+  model: "claude-sonnet-4-20250514"
+  temperature: 0.1  # low temperature for factual, analytical responses
+  max_tokens: 2048
+
+embedding:
+  provider: "openai"
+  model: "text-embedding-3-small"
+  dimensions: 1536
+
+memory:
+  backend: "pgvector"
+  table_name: "agent_memory"
+  conversation_window: 10  # keep last 10 messages in context
+  long_term_top_k: 5       # retrieve top 5 relevant memories
+  similarity_threshold: 0.7 # minimum cosine similarity to include
+
+agents:
+  router:
+    description: "Classifies query intent and routes to appropriate agent"
+    categories:
+      - "factual"       # → Analyst only
+      - "diagnostic"    # → Analyst → Strategist
+      - "prescriptive"  # → Analyst → Strategist → Writer
+      - "conversational" # → Writer only
+
+  analyst:
+    description: "Diagnoses what happened using data queries and statistical analysis"
+    tools:
+      - "query_member_data"
+      - "query_location_metrics"
+      - "compare_cohorts"
+      - "survival_curve"
+      - "churn_score_lookup"
+
+  strategist:
+    description: "Recommends actions based on causal analysis and optimization"
+    tools:
+      - "estimate_treatment_effect"
+      - "get_cate_for_segment"
+      - "run_budget_optimizer"
+      - "simulate_intervention"
+
+  writer:
+    description: "Formats technical outputs into manager-friendly language"
+    rules:
+      - "No statistical jargon (no p-values, no confidence intervals in raw form)"
+      - "Always include specific action items"
+      - "Numbers should be rounded and contextualized ('15% churn — that's 45 members')"
+      - "If uncertain, say so explicitly"
+
+guardrails:
+  pii_fields:
+    - "member_name"
+    - "cpf"
+    - "email"
+    - "phone"
+    - "address"
+  pii_mask_token: "[REDACTED]"
+  max_sql_rows: 1000          # never return more than 1000 rows from a query
+  confidence_threshold: 0.6   # below this → fallback response
+  fallback_response: >
+    I don't have enough confidence in my analysis to give you a reliable answer.
+    I recommend checking with the analytics team for a deeper investigation.
+  blocked_patterns:
+    - "DROP TABLE"
+    - "DELETE FROM"
+    - "UPDATE.*SET"
+    - "ALTER TABLE"
+
+evaluation:
+  scenarios_path: "configs/eval_scenarios.yaml"
+  metrics:
+    - "task_success_rate"
+    - "tool_selection_accuracy"
+    - "factual_grounding_rate"
+    - "pii_leak_rate"
+    - "avg_tokens_per_query"
+    - "avg_latency_seconds"
+  thresholds:
+    task_success_rate: 0.7
+    pii_leak_rate: 0.0       # zero tolerance
+    avg_latency_seconds: 15
+
+audit:
+  enabled: true
+  log_inputs: true           # log masked inputs
+  log_outputs: true
+  log_tool_calls: true
+  log_tokens: true
+  log_latency: true
+  retention_days: 90         # LGPD: retain logs for 90 days max

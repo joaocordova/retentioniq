@@ -1,0 +1,57 @@
+# Monitoring configuration for RetentionIQ
+
+data_drift:
+  enabled: true
+  reference_window_days: 90  # baseline: last 90 days of training data
+  current_window_days: 7     # compare: last 7 days of production data
+  method: "ks_test"          # Kolmogorov-Smirnov test
+  significance_level: 0.05
+  features_to_monitor:
+    - "visit_frequency_30d"
+    - "days_since_last_visit"
+    - "tenure_months"
+    - "monthly_price"
+    - "payment_delay_flag"
+  alert_on_drift: true
+  alert_channel: "slack"     # or "email"
+
+model_performance:
+  enabled: true
+  metrics:
+    - name: "auc_roc"
+      threshold: 0.80        # alert if drops below
+      window_days: 30
+    - name: "precision_at_k"
+      k: 100                 # top-100 predictions
+      threshold: 0.40
+      window_days: 30
+    - name: "brier_score"
+      threshold: 0.25        # calibration quality
+      window_days: 30
+  retrain_trigger:
+    metric: "auc_roc"
+    threshold: 0.78           # auto-retrain if drops below this
+    cooldown_days: 7          # don't retrain more than once per week
+
+prediction_drift:
+  enabled: true
+  # Monitor if prediction distribution shifts significantly
+  # Could indicate concept drift even before labels are available
+  method: "psi"              # Population Stability Index
+  threshold: 0.2             # PSI > 0.2 = significant shift
+  window_days: 7
+
+business_metrics:
+  enabled: true
+  metrics:
+    - name: "actual_churn_rate"
+      compare_with: "predicted_churn_rate"
+      tolerance_pp: 2.0       # alert if difference > 2 percentage points
+    - name: "retention_action_coverage"
+      description: "% of high-risk members that received an action"
+      threshold: 0.50          # at least 50% should be contacted
+
+reporting:
+  schedule: "weekly"           # generate Evidently HTML report
+  output_dir: "reports/monitoring/"
+  retention_days: 90

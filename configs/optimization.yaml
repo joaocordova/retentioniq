@@ -1,0 +1,33 @@
+# Budget optimization configuration
+
+objective: "maximize_retained_mrr"  # maximize monthly recurring revenue retained
+
+constraints:
+  total_budget: 50000  # R$ 50,000/month for retention
+  min_budget_per_location: 50   # every location gets at least R$50
+  max_budget_per_location: 2000 # no single location gets more than R$2,000
+  max_actions_per_member: 1     # one action per member per month
+  staff_hours_per_location: 20  # hours available for retention activities per month
+
+actions:
+  - name: "sms_reengagement"
+    cost_per_member: 2.50
+    time_per_member_minutes: 0  # automated
+  - name: "phone_call"
+    cost_per_member: 15.00
+    time_per_member_minutes: 10
+  - name: "discount_offer"
+    cost_per_member: 50.00       # average discount value
+    time_per_member_minutes: 2
+    eligible_segments: ["regular"]  # aggregator members excluded
+  - name: "personal_trainer_session"
+    cost_per_member: 80.00
+    time_per_member_minutes: 60
+    eligible_segments: ["regular", "aggregator"]
+
+stochastic:
+  enabled: true
+  n_scenarios: 50         # number of treatment effect scenarios to sample
+  sampling_method: "bootstrap"  # sample from CATE confidence intervals
+  risk_aversion: 0.3      # 0 = risk neutral, 1 = fully robust (minimax)
+  solver: "glpk"          # open-source MILP solver (or "gurobi" if license available)

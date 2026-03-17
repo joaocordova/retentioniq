@@ -1,0 +1,87 @@
+# Data pipeline configuration
+# Defines schemas, paths, and quality thresholds for each medallion layer
+
+source:
+  raw_data_dir: "data/raw/"
+  file_format: "parquet"
+  tables:
+    - name: "locations"
+      file: "locations.parquet"
+    - name: "members"
+      file: "members.parquet"
+    - name: "visits"
+      file: "visits.parquet"
+    - name: "retention_actions"
+      file: "retention_actions.parquet"
+
+bronze:
+  output_schema: "bronze"
+  schemas:
+    locations:
+      columns:
+        location_id: "string"
+        region: "string"
+        is_urban: "bool"
+        capacity: "int64"
+        monthly_operating_cost: "int64"
+        staff_retention_hours: "int64"
+    members:
+      columns:
+        member_id: "string"
+        location_id: "string"
+        join_date: "string"
+        cancel_date: "string"
+        churned: "bool"
+        contract_source: "string"
+        aggregator_platform: "string"
+        plan_type: "string"
+        monthly_price: "float64"
+        age: "int64"
+        gender: "string"
+        name: "string"
+        email: "string"
+        cpf: "string"
+    visits:
+      columns:
+        member_id: "string"
+        location_id: "string"
+        visit_date: "string"
+        visit_duration_minutes: "int64"
+    retention_actions:
+      columns:
+        member_id: "string"
+        location_id: "string"
+        action_date: "string"
+        action_type: "string"
+        cost: "float64"
+
+silver:
+  output_schema: "silver"
+  rules:
+    reenrollment_window_days: 30    # cancel + re-enroll within 30d = same tenure
+    min_visit_duration_minutes: 5   # visits < 5 min are likely check-in errors
+    max_visit_duration_minutes: 300 # visits > 5h are likely forgot-to-checkout
+    valid_contract_sources:
+      - "regular"
+      - "aggregator"
+    valid_plan_types:
+      - "basic"
+      - "standard"
+      - "premium"
+      - "aggregator_standard"
+    null_thresholds:
+      location_id: 0.0    # no nulls allowed
+      join_date: 0.0
+      contract_source: 0.0
+      monthly_price: 0.01  # up to 1% nulls tolerated
+
+gold:
+  output_schema: "gold"
+  member_360:
+    visit_windows_days: [7, 14, 30, 60, 90]
+    include_aggregated_features: true
+  location_aggregates:
+    periods: ["daily", "weekly", "monthly"]
+  cohort:
+    frequency: "monthly"
+    min_cohort_size: 50
